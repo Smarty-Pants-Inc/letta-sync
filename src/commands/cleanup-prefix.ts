@@ -19,8 +19,7 @@ import {
   dryRunNotice,
   verbose,
 } from '../utils/output.js';
-import Letta from '@letta-ai/letta-client';
-import { resolveLettaApiKey } from '../config/letta-auth.js';
+import { createClient, type LettaClient } from '../api/client.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -80,13 +79,14 @@ export async function cleanupPrefixCommand(
     info(`Prefix: ${prefix}`);
   }
 
-  const apiKey = resolveLettaApiKey();
-  if (!apiKey) {
-    return { success: false, message: 'LETTA_API_KEY is required (set env var or run `letta setup`)' };
+  let client: LettaClient;
+  try {
+    client = createClient({ project: globalOpts.project, debug: globalOpts.verbose });
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : 'Failed to create API client' };
   }
 
   const agentLimit = Math.max(1, parseInt(options.agentLimit ?? '200', 10) || 200);
-  const client = new Letta({ apiKey, project: globalOpts.project });
 
   // Find candidate blocks by label_search
   const page = await client.blocks.list({ label_search: prefix, limit: 500 } as any);

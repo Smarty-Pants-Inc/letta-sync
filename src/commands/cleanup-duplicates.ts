@@ -18,11 +18,10 @@ import {
   dryRunNotice,
   verbose,
 } from '../utils/output.js';
-import Letta from '@letta-ai/letta-client';
+import { createClient, type LettaClient } from '../api/client.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as yaml from 'yaml';
-import { resolveLettaApiKey } from '../config/letta-auth.js';
 
 interface BlockManifest {
   apiVersion: string;
@@ -146,15 +145,15 @@ export async function cleanupDuplicatesCommand(
     info('This command only targets blocks managed by smarty-admin (metadata.managed_by + metadata.source).');
   }
 
-  const apiKey = resolveLettaApiKey();
-  if (!apiKey) {
-    return { success: false, message: 'LETTA_API_KEY is required (set env var or run `letta setup`)' };
+  let client: LettaClient;
+  try {
+    client = createClient({ project: globalOpts.project, debug: globalOpts.verbose });
+  } catch (err) {
+    return { success: false, message: err instanceof Error ? err.message : 'Failed to create API client' };
   }
 
   const keepN = Math.max(1, parseInt(options.keep ?? '1', 10) || 1);
   const agentLimit = Math.max(1, parseInt(options.agentLimit ?? '200', 10) || 200);
-
-  const client = new Letta({ apiKey, project: globalOpts.project });
 
   // Load desired blocks from manifests and merge by label (base -> org -> project).
   const packagesDir = findPackagesExamplesDir(process.cwd());
