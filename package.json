@@ -1,0 +1,63 @@
+{
+  "name": "letta-sync",
+  "version": "0.1.0",
+  "description": "CLI tool for managing Letta agent configurations",
+  "type": "module",
+  "bin": {
+    "letta-sync": "letta-sync.js"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "letta-sync.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Smarty-Pants-Inc/letta-sync.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Smarty-Pants-Inc/letta-sync/issues"
+  },
+  "homepage": "https://github.com/Smarty-Pants-Inc/letta-sync#readme",
+  "keywords": [
+    "letta",
+    "cli",
+    "agent",
+    "configuration",
+    "sync"
+  ],
+  "author": "Paul Bettner",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun run build.js",
+    "prepare": "bun run build",
+    "check": "bun run typecheck",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run tests/e2e/",
+    "test:e2e:run": "tsx tests/e2e/run.ts"
+  },
+  "dependencies": {
+    "@letta-ai/letta-client": "^1.6.1",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^22.14.1",
+    "@vitest/coverage-v8": "^2.1.8",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  check:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.3.0
+
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun install
+
+      - name: Type Check
+        run: bun run typecheck
+
+  build:
+    needs: check
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS arm64 (macos-14)
+            runner: macos-14
+          - name: Linux x64 (ubuntu-24.04)
+            runner: ubuntu-24.04
+          - name: Linux arm64 (ubuntu-24.04-arm)
+            runner: ubuntu-24.04-arm
+          - name: Windows x64 (windows-latest)
+            runner: windows-latest
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.3.0
+
+      - name: Install dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun install
+
+      - name: Run tests
+        run: bun run test
+
+      - name: Build bundle
+        run: bun run build
+
+      - name: CLI help smoke test
+        run: ./letta-sync.js --help
+
+      - name: CLI version smoke test
+        run: ./letta-sync.js --version || true
+
+      - name: Bundle size check
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            SIZE=$(powershell -command "(Get-Item letta-sync.js).length")
+          else
+            SIZE=$(stat -f%z ./letta-sync.js 2>/dev/null || stat -c%s ./letta-sync.js 2>/dev/null)
+          fi
+          SIZE_MB=$((SIZE / 1024 / 1024))
+          echo "Bundle size: $SIZE bytes (~${SIZE_MB}MB)"
+          # Warn if bundle is larger than 20MB
+          if [ $SIZE -gt 20971520 ]; then
+            echo "Warning: Bundle size is larger than 20MB"
+          else
+            echo "Bundle size is acceptable"
+          fi
+
+      - name: Publish dry-run
+        if: ${{ github.event_name == 'push' }}
+        run: bun publish --dry-run
+
+      - name: Pack (no auth available)
+        if: ${{ github.event_name != 'push' }}
+        run: bun pm pack
