@@ -37,27 +37,31 @@ import { execFileSync } from 'node:child_process';
 // Vault-first (smarty-dev convention)
 // ---------------------------------------------------------------------------
 
-function findRepoRoot(startDir: string): string {
-  let current = startDir;
+function findVaultPath(startDir: string): string | null {
+  let current = path.resolve(startDir);
   const root = path.parse(current).root;
+
   while (true) {
-    if (fs.existsSync(path.join(current, '.git')) || fs.existsSync(path.join(current, '.letta'))) {
-      return current;
-    }
-    if (current === root) return startDir;
+    const candidate = path.join(current, '.secrets', 'dev.env.enc');
+    if (fs.existsSync(candidate)) return candidate;
+
+    if (current === root) break;
     const parent = path.dirname(current);
-    if (parent === current) return startDir;
+    if (parent === current) break;
     current = parent;
   }
+
+  return null;
 }
 
 function resolveVaultApiKey(): string | null {
   // Allow opting out for debugging.
   if (process.env.SMARTY_PREFER_ENV_KEY === '1') return null;
 
-  const repoRoot = findRepoRoot(process.cwd());
-  const vaultPath = path.join(repoRoot, '.secrets', 'dev.env.enc');
-  if (!fs.existsSync(vaultPath)) return null;
+  // Look for the repo vault by walking up. This avoids breaking when invoked
+  // from inside nested git repos/submodules.
+  const vaultPath = findVaultPath(process.cwd());
+  if (!vaultPath) return null;
 
   try {
     execFileSync('sops', ['--version'], { stdio: 'ignore' });
