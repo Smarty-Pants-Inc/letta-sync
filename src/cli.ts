@@ -40,6 +40,13 @@ function createContext(options: GlobalOptions): CommandContext {
     verbose: options.verbose,
   });
 
+  // Many commands still read `options.project` directly. If project resolution
+  // succeeded via registry/local config and no explicit --project was provided,
+  // persist the resolved project back onto the options object as an id/slug.
+  if (!options.project && projectResult.project) {
+    options.project = projectResult.project.id ?? projectResult.project.slug;
+  }
+
   // Log project resolution in verbose mode
   if (options.verbose) {
     verboseLog(`Project resolution attempted: ${projectResult.attempted.join(' -> ')}`, true);
