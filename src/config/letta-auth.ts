@@ -33,6 +33,65 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
+// ---------------------------------------------------------------------------
+// Vault-first (smarty-dev convention)
+// ---------------------------------------------------------------------------
+
+function findRepoRoot(startDir: string): string {
+  let current = startDir;
+  const root = path.parse(current).root;
+  while (true) {
+    if (fs.existsSync(path.join(current, '.git')) || fs.existsSync(path.join(current, '.letta'))) {
+      return current;
+    }
+    if (current === root) return startDir;
+    const parent = path.dirname(current);
+    if (parent === current) return startDir;
+    current = parent;
+  }
+}
+
+function resolveVaultApiKey(): string | null {
+  // Allow opting out for debugging.
+  if (process.env.SMARTY_PREFER_ENV_KEY === '1') return null;
+
+  const repoRoot = findRepoRoot(process.cwd());
+  const vaultPath = path.join(repoRoot, '.secrets', 'dev.env.enc');
+  if (!fs.existsSync(vaultPath)) return null;
+
+  try {
+    execFileSync('sops', ['--version'], { stdio: 'ignore' });
+  } catch {
+    return null;
+  }
+
+  const env = { ...process.env };
+  if (!env.SOPS_AGE_KEY_FILE) {
+    const defaultKeys = path.join(os.homedir(), '.config', 'sops', 'age', 'keys.txt');
+    if (fs.existsSync(defaultKeys)) {
+      env.SOPS_AGE_KEY_FILE = defaultKeys;
+    }
+  }
+
+  try {
+    const out = execFileSync(
+      'sops',
+      ['-d', '--input-type', 'dotenv', '--output-type', 'dotenv', vaultPath],
+      { encoding: 'utf-8', env }
+    );
+    for (const line of out.split(/\r?\n/)) {
+      if (line.startsWith('LETTA_API_KEY=')) {
+        const v = line.slice('LETTA_API_KEY='.length).trim();
+        if (v.length > 0) return v;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
+}
+
 /**
  * Determine the Letta API base URL.
  *
@@ -170,6 +229,12 @@ export function resolveLettaApiKey(): string | null {
     if (serverPw && serverPw.trim().length > 0) {
       return serverPw.trim();
     }
+  }
+
+  // For Letta Cloud, prefer vault-backed key when present.
+  if (isCloud) {
+    const fromVault = resolveVaultApiKey();
+    if (fromVault) return fromVault;
   }
 
   // Try auth helper first (if configured)
