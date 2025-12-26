@@ -22,6 +22,10 @@ function normalizeSlug(s: string): string {
   return s.trim().toLowerCase();
 }
 
+function normalizeName(s: string): string {
+  return s.trim().toLowerCase();
+}
+
 async function fetchJson<T>(
   client: Letta,
   apiKey: string,
@@ -86,8 +90,19 @@ export async function ensureProject(
   params: { slug: string; name?: string }
 ): Promise<{ project: LettaProject; created: boolean }> {
   const slug = normalizeSlug(params.slug);
+  const desiredName = params.name ?? params.slug;
+  const desiredNameNorm = normalizeName(desiredName);
+
   const projects = await listProjects(apiKey);
-  const existing = projects.find((p) => normalizeSlug(p.slug) === slug);
+
+  // Prefer exact slug match.
+  let existing = projects.find((p) => normalizeSlug(p.slug) === slug);
+
+  // If the server auto-suffixed the slug to avoid global collisions (e.g.
+  // `smarty-dev` -> `smarty-dev-abc123`), reruns should still converge.
+  if (!existing) {
+    existing = projects.find((p) => normalizeName(p.name) === desiredNameNorm);
+  }
   if (existing) {
     return { project: existing, created: false };
   }
