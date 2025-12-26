@@ -251,24 +251,29 @@ function loadSettingsFile(): LettaSettings | null {
 /**
  * Resolve API key from environment or settings file
  */
-function findRepoRoot(startDir: string): string {
-  let current = startDir;
+function findVaultPath(startDir: string): string | undefined {
+  let current = path.resolve(startDir);
   const root = path.parse(current).root;
   while (true) {
-    if (fs.existsSync(path.join(current, '.git')) || fs.existsSync(path.join(current, '.letta'))) {
-      return current;
-    }
-    if (current === root) return startDir;
+    const candidate = path.join(current, '.secrets', 'dev.env.enc');
+    if (fs.existsSync(candidate)) return candidate;
+
+    if (current === root) break;
     const parent = path.dirname(current);
-    if (parent === current) return startDir;
+    if (parent === current) break;
     current = parent;
   }
+  return undefined;
 }
 
 function resolveVaultApiKey(): string | undefined {
-  const repoRoot = findRepoRoot(process.cwd());
-  const vaultPath = path.join(repoRoot, '.secrets', 'dev.env.enc');
-  if (!fs.existsSync(vaultPath)) return undefined;
+  // Allow opting out for debugging.
+  if (process.env.SMARTY_PREFER_ENV_KEY === '1') return undefined;
+
+  // Look for the repo vault by walking up. This avoids breaking when invoked
+  // from inside nested git repos/submodules.
+  const vaultPath = findVaultPath(process.cwd());
+  if (!vaultPath) return undefined;
 
   try {
     execFileSync('sops', ['--version'], { stdio: 'ignore' });
