@@ -44,7 +44,7 @@
     "test:e2e:run": "tsx tests/e2e/run.ts"
   },
   "dependencies": {
-    "@letta-ai/letta-client": "^1.6.1",
+    "@letta-ai/letta-client": "^1.6.2",
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
     "yaml": "^2.7.0"
