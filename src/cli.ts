@@ -40,53 +40,6 @@ function createContext(options: GlobalOptions): CommandContext {
     verbose: options.verbose,
   });
 
-/**
- * projects command - Manage Letta Cloud projects
- */
-const projects = program
-  .command('projects')
-  .description('Manage Letta Cloud projects');
-
-projects
-  .command('list')
-  .description('List projects available to the current API key')
-  .action(async () => {
-    const globalOpts = program.opts() as GlobalOptions;
-    const ctx = createContext(globalOpts);
-
-    try {
-      const result = await projectsListCommand(ctx, {});
-      if (ctx.outputFormat === 'json') {
-        printResult(result, ctx.outputFormat);
-      }
-      process.exit(result.success ? 0 : 1);
-    } catch (err) {
-      error(`Projects list failed: ${err instanceof Error ? err.message : String(err)}`);
-      process.exit(1);
-    }
-  });
-
-projects
-  .command('create')
-  .description('Create a project if it does not already exist')
-  .requiredOption('--slug <slug>', 'Project slug (unique)')
-  .option('--name <name>', 'Project display name (defaults to slug)')
-  .action(async (cmdOpts) => {
-    const globalOpts = program.opts() as GlobalOptions;
-    const ctx = createContext(globalOpts);
-
-    try {
-      const result = await projectsCreateCommand(ctx, { slug: cmdOpts.slug, name: cmdOpts.name });
-      if (ctx.outputFormat === 'json') {
-        printResult(result, ctx.outputFormat);
-      }
-      process.exit(result.success ? 0 : 1);
-    } catch (err) {
-      error(`Projects create failed: ${err instanceof Error ? err.message : String(err)}`);
-      process.exit(1);
-    }
-  });
-
   // Log project resolution in verbose mode
   if (options.verbose) {
     verboseLog(`Project resolution attempted: ${projectResult.attempted.join(' -> ')}`, true);
@@ -143,6 +96,53 @@ const program = new Command()
     new Option('-v, --verbose', 'Enable verbose logging')
       .default(false)
   );
+
+/**
+ * projects command - Manage Letta Cloud projects
+ */
+const projects = program
+  .command('projects')
+  .description('Manage Letta Cloud projects');
+
+projects
+  .command('list')
+  .description('List projects available to the current API key')
+  .action(async () => {
+    const globalOpts = program.opts() as GlobalOptions;
+    const ctx = createContext(globalOpts);
+
+    try {
+      const result = await projectsListCommand(ctx, {});
+      if (ctx.outputFormat === 'json') {
+        printResult(result, ctx.outputFormat);
+      }
+      process.exit(result.success ? 0 : 1);
+    } catch (err) {
+      error(`Projects list failed: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(1);
+    }
+  });
+
+projects
+  .command('create')
+  .description('Create a project if it does not already exist')
+  .requiredOption('--slug <slug>', 'Project slug (unique)')
+  .option('--name <name>', 'Project display name (defaults to slug)')
+  .action(async (cmdOpts) => {
+    const globalOpts = program.opts() as GlobalOptions;
+    const ctx = createContext(globalOpts);
+
+    try {
+      const result = await projectsCreateCommand(ctx, { slug: cmdOpts.slug, name: cmdOpts.name });
+      if (ctx.outputFormat === 'json') {
+        printResult(result, ctx.outputFormat);
+      }
+      process.exit(result.success ? 0 : 1);
+    } catch (err) {
+      error(`Projects create failed: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(1);
+    }
+  });
 
 /**
  * diff command - Show what would change
