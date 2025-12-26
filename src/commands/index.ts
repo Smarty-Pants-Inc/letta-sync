@@ -10,3 +10,4 @@ export { upgradeCommand, type UpgradeOptions } from './upgrade.js';
 export { cleanupDuplicatesCommand, type CleanupDuplicatesOptions } from './cleanup-duplicates.js';
 export { cleanupPrefixCommand, type CleanupPrefixOptions } from './cleanup-prefix.js';
 export { scopeSyncCommand, type ScopeSyncCommandOptions } from './scope-sync.js';
+export { projectsListCommand, projectsCreateCommand, type ProjectsListOptions, type ProjectsCreateOptions } from './projects.js';

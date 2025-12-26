@@ -14,6 +14,7 @@ import {
 } from '../utils/output.js';
 import Letta from '@letta-ai/letta-client';
 import { resolveLettaApiKey } from '../config/letta-auth.js';
+import { ensureProject } from '../api/projects.js';
 import {
   resolveIdentifierKey,
   isValidIdentifierKey,
@@ -263,7 +264,11 @@ export async function bootstrapCommand(
 
   // Use the official Letta SDK so we can create/update agents and identities.
   // It automatically respects LETTA_BASE_URL for self-hosted setups.
-  const sdkClient = new Letta({ apiKey, project: resolvedProject.projectSlug });
+  // Ensure the requested project exists (Letta Cloud projects system is back).
+  await ensureProject(apiKey, { slug: resolvedProject.projectSlug, name: resolvedProject.projectSlug });
+
+  // Prefer projectID, but pass through string (slug or id). Letta accepts either.
+  const sdkClient = new Letta({ apiKey, projectID: resolvedProject.projectSlug });
 
   const createResult = await createAgentFromTemplate(sdkClient as any, createOptions);
 

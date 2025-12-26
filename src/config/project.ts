@@ -193,8 +193,9 @@ export function parseProjectIdentifier(identifier: string): ResolvedProject {
     return { slug, id };
   }
 
-  // Check if it looks like an ID (starts with proj_ or is UUID-like)
-  if (identifier.startsWith('proj_') || isUUID(identifier)) {
+  // Check if it looks like an ID.
+  // Letta Cloud project IDs may be UUIDs, or prefixed IDs like `project-...`.
+  if (identifier.startsWith('proj_') || identifier.startsWith('project-') || isUUID(identifier)) {
     return { id: identifier };
   }
 

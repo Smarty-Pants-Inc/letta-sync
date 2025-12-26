@@ -46,7 +46,8 @@ async function assertProjectSelectionWorks(apiKey: string, project?: string): Pr
   if (!project) return;
 
   const defaultClient = new Letta({ apiKey });
-  const projectClient = new Letta({ apiKey, project });
+  // Prefer projectID, but pass through string (slug or id). Letta accepts either.
+  const projectClient = new Letta({ apiKey, projectID: project });
 
   // Prefer blocks, fallback to agents if empty.
   const defaultBlocks = pageItems<any>((await defaultClient.blocks.list({ limit: 1 } as any)) as any);
@@ -172,7 +173,8 @@ export async function syncCommand(
     await assertProjectSelectionWorks(apiKey, globalOpts.project);
 
     // Create API client using official Letta SDK
-    const client = new Letta({ apiKey, project: globalOpts.project });
+    // Prefer projectID, but pass through string (slug or id). Letta accepts either.
+    const client = new Letta({ apiKey, projectID: globalOpts.project });
 
     verbose(`Connecting to Letta API...`, globalOpts.verbose);
     verbose(`Target project: ${globalOpts.project || '(default)'}`, globalOpts.verbose);
