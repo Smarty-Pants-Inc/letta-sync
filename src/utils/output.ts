@@ -116,7 +116,8 @@ export function success(message: string): void {
  */
 export function verbose(message: string, isVerbose: boolean): void {
   if (isVerbose) {
-    console.log(chalk.gray('[verbose]'), message);
+    // Keep JSON output clean: verbose/debug output should never go to stdout.
+    console.error(chalk.gray('[verbose]'), message);
   }
 }
 
