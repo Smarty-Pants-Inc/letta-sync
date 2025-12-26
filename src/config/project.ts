@@ -248,30 +248,41 @@ export function requireProject(options: ProjectResolveOptions = {}): ResolvedPro
  * Load local project configuration from .letta/project.json (or .smarty/project.json for backwards compat)
  */
 function loadLocalProjectConfig(cwd: string): ProjectConfig | null {
-  // Try primary path first
-  let configPath = resolve(cwd, LOCAL_PROJECT_CONFIG);
-  
-  if (!existsSync(configPath)) {
-    // Try legacy path for backwards compatibility
-    configPath = resolve(cwd, LEGACY_LOCAL_PROJECT_CONFIG);
-    if (!existsSync(configPath)) {
-      return null;
+  // Walk up: tools are often run from subdirs, but the project config lives at
+  // the repo root.
+  let currentDir = cwd;
+  const root = resolve('/');
+
+  while (currentDir !== root) {
+    // Try primary path first
+    const primaryPath = resolve(currentDir, LOCAL_PROJECT_CONFIG);
+    const legacyPath = resolve(currentDir, LEGACY_LOCAL_PROJECT_CONFIG);
+    const configPath = existsSync(primaryPath)
+      ? primaryPath
+      : existsSync(legacyPath)
+        ? legacyPath
+        : null;
+
+    if (configPath) {
+      try {
+        const content = readFileSync(configPath, 'utf-8');
+        const config = JSON.parse(content) as ProjectConfig;
+
+        // Validate required fields
+        if (!config.slug && !config.id) {
+          return null;
+        }
+
+        return config;
+      } catch {
+        return null;
+      }
     }
+
+    currentDir = dirname(currentDir);
   }
 
-  try {
-    const content = readFileSync(configPath, 'utf-8');
-    const config = JSON.parse(content) as ProjectConfig;
-    
-    // Validate required fields
-    if (!config.slug && !config.id) {
-      return null;
-    }
-
-    return config;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 /**
